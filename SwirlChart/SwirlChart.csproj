@@ -10,7 +10,7 @@
        and updates under - changing it later installs a second, separate app. -->
   <PropertyGroup>
     <ApplicationId>com.erwin.swirl2</ApplicationId>
-    <ApplicationTitle>SwirlChart</ApplicationTitle>
+    <ApplicationTitle>Swirl Chart</ApplicationTitle>
     <ApplicationVersion>1</ApplicationVersion>
     <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
   </PropertyGroup>
