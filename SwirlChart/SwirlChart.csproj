@@ -5,6 +5,15 @@
     <UseMaui>true</UseMaui>
     <SingleProject>true</SingleProject>
   </PropertyGroup>
+  <!-- App identity. $(ApplicationId) is what the Android build stamps as the manifest
+       package name (via _GetAndroidPackageName), so it is the id the device installs
+       and updates under - changing it later installs a second, separate app. -->
+  <PropertyGroup>
+    <ApplicationId>com.erwin.swirl2</ApplicationId>
+    <ApplicationTitle>SwirlChart</ApplicationTitle>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
+  </PropertyGroup>
   <PropertyGroup>
     <EnableDefaultCompileItems>true</EnableDefaultCompileItems>
   </PropertyGroup>
