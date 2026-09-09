@@ -103,8 +103,9 @@ public static class SwirlModel
 }
 
 /// <summary>
-/// Draws the exhaust thermocouple ring, the combustor can ring, and the back-trace
-/// lines that map each T/C to the can it sees, for the current swirl angle.
+/// Draws the fixed combustor can ring and the exhaust thermocouple ring. The T/C ring
+/// is carried round by the current swirl angle, so each T/C's spoke points at the can
+/// its gas came from - the back-trace is read off the alignment.
 /// </summary>
 public class SwirlDrawable : IDrawable
 {
@@ -114,9 +115,10 @@ public class SwirlDrawable : IDrawable
     private const double CanSpacing = 360.0 / CanCount;   // 25.714286 deg
     private const double TcSpacing = 360.0 / TcCount;     // 15.000000 deg
 
-    // Screen bearings are measured clockwise from 12 o'clock. 0 deg sits on the
-    // midpoint between Can 14 / Can 1 and between T/C 24 / T/C 1, so both rings are
-    // offset by half of their own spacing. Both are numbered counter-clockwise.
+    // Screen bearings run clockwise from 12 o'clock, which is the mirror of the spec's
+    // convention - so the spec's "Angle_Can = Angle_TC - swirl" is a +swirl rotation here.
+    // 0 deg sits on the midpoint between Can 14 / Can 1 and between T/C 24 / T/C 1, so
+    // each ring is offset by half its own spacing. Both are numbered counter-clockwise.
     private const double CanZeroOffset = CanSpacing / 2.0;  // 12.857143 deg
     private const double TcZeroOffset = TcSpacing / 2.0;    // 7.500000 deg
 
@@ -124,24 +126,13 @@ public class SwirlDrawable : IDrawable
 
     public void SetSwirlAngle(double angle) => swirlAngle = angle;
 
-    /// <summary>Screen bearing of a 1-based combustor can.</summary>
+    /// <summary>Screen bearing of a 1-based combustor can. The can ring never moves.</summary>
     private static double CanAngle(int can) =>
         Mod(-(CanZeroOffset + (can - 1) * CanSpacing), 360.0);
 
-    /// <summary>Screen bearing of a 1-based exhaust thermocouple.</summary>
-    private static double TcAngle(int tc) =>
-        Mod(-(TcZeroOffset + (tc - 1) * TcSpacing), 360.0);
-
-    /// <summary>
-    /// Back-traces a thermocouple to its suspect can: Angle_Can = (Angle_TC - swirl) mod 360,
-    /// then snaps to the nearest can position.
-    /// </summary>
-    private static int BackTraceCan(double tcAngle, double swirl)
-    {
-        double target = Mod(tcAngle - swirl, 360.0);
-        int index = (int)Math.Round(Mod(-target - CanZeroOffset, 360.0) / CanSpacing);
-        return Mod(index, CanCount) + 1;
-    }
+    /// <summary>Screen bearing of a 1-based thermocouple, rotated by the swirl angle.</summary>
+    private double TcAngle(int tc) =>
+        Mod(-(TcZeroOffset + (tc - 1) * TcSpacing) + swirlAngle, 360.0);
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
@@ -151,43 +142,32 @@ public class SwirlDrawable : IDrawable
         float centerX = dirtyRect.Center.X;
         float centerY = dirtyRect.Center.Y;
         float radius = Math.Min(centerX, centerY) - 20;
-        float canRadius = radius * 0.8f;
-
-        canvas.StrokeSize = 1;
-        canvas.StrokeColor = Colors.Black;
-        canvas.DrawCircle(centerX, centerY, radius);
-
-        canvas.StrokeColor = Color.FromArgb("#CCCCCC");
-        canvas.DrawCircle(centerX, centerY, canRadius);
-
-        // Back-trace lines first so the markers and labels draw on top of them.
-        canvas.StrokeColor = Color.FromArgb("#0078D4");
-        for (int tc = 1; tc <= TcCount; tc++)
-        {
-            double tcBearing = TcAngle(tc);
-            int can = BackTraceCan(tcBearing, swirlAngle);
-
-            PointF from = Polar(centerX, centerY, radius, tcBearing);
-            PointF to = Polar(centerX, centerY, canRadius, CanAngle(can));
-            canvas.DrawLine(from.X, from.Y, to.X, to.Y);
-        }
 
         canvas.FillColor = Colors.Gray;
         for (int can = 1; can <= CanCount; can++)
         {
-            PointF p = Polar(centerX, centerY, canRadius, CanAngle(can));
-            canvas.DrawString($"C{can}", p.X - 12, p.Y - 10, 24, 20,
+            PointF p = Polar(centerX, centerY, radius * 0.8f, CanAngle(can));
+            canvas.DrawString($"C{can}", p.X - 10, p.Y - 10, 20, 20,
                 HorizontalAlignment.Center, VerticalAlignment.Center);
         }
 
         for (int tc = 1; tc <= TcCount; tc++)
         {
-            PointF p = Polar(centerX, centerY, radius, TcAngle(tc));
+            double bearing = TcAngle(tc);
+            PointF outer = Polar(centerX, centerY, radius, bearing);
+            PointF inner = Polar(centerX, centerY, radius * 0.5f, bearing);
+
+            canvas.StrokeColor = Colors.Black;
+            canvas.DrawLine(outer.X, outer.Y, inner.X, inner.Y);
+
             canvas.FillColor = Colors.Red;
-            canvas.FillCircle(p.X, p.Y, 5);
-            canvas.DrawString($"{tc}", p.X + 5, p.Y + 5, 30, 20,
+            canvas.FillCircle(outer.X, outer.Y, 5);
+            canvas.DrawString($"{tc}", outer.X + 5, outer.Y + 5, 30, 20,
                 HorizontalAlignment.Left, VerticalAlignment.Top);
         }
+
+        canvas.StrokeColor = Colors.Black;
+        canvas.DrawCircle(centerX, centerY, radius);
     }
 
     private static PointF Polar(float cx, float cy, float r, double bearingDeg)
@@ -201,12 +181,6 @@ public class SwirlDrawable : IDrawable
     private static double Mod(double a, double m)
     {
         double r = a % m;
-        return r < 0 ? r + m : r;
-    }
-
-    private static int Mod(int a, int m)
-    {
-        int r = a % m;
         return r < 0 ? r + m : r;
     }
 }
