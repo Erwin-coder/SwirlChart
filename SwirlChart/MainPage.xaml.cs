@@ -103,9 +103,10 @@ public static class SwirlModel
 }
 
 /// <summary>
-/// Draws the fixed combustor can ring and the exhaust thermocouple ring. The T/C ring
-/// is carried round by the current swirl angle, so each T/C's spoke points at the can
-/// its gas came from - the back-trace is read off the alignment.
+/// Draws the MS9001E swirl chart in the style of the original ActSwirl2 tool: a fixed
+/// ring of 14 combustor cans on stalks outside the turbine circle, and 24 exhaust
+/// thermocouple spokes that rotate with the swirl angle. The suspect can for a given
+/// T/C is read off the spoke that points at it.
 /// </summary>
 public class SwirlDrawable : IDrawable
 {
@@ -115,12 +116,19 @@ public class SwirlDrawable : IDrawable
     private const double CanSpacing = 360.0 / CanCount;   // 25.714286 deg
     private const double TcSpacing = 360.0 / TcCount;     // 15.000000 deg
 
-    // Screen bearings run clockwise from 12 o'clock, which is the mirror of the spec's
-    // convention - so the spec's "Angle_Can = Angle_TC - swirl" is a +swirl rotation here.
-    // 0 deg sits on the midpoint between Can 14 / Can 1 and between T/C 24 / T/C 1, so
-    // each ring is offset by half its own spacing. Both are numbered counter-clockwise.
+    // Screen bearings run clockwise from 12 o'clock. 0 deg sits on the midpoint between
+    // Can 14 and Can 1, so the can ring carries a half-pitch offset; the T/C ring does
+    // not - T/C 24 sits exactly on 0 deg at zero swirl, matching ActSwirl2.
     private const double CanZeroOffset = CanSpacing / 2.0;  // 12.857143 deg
-    private const double TcZeroOffset = TcSpacing / 2.0;    // 7.500000 deg
+
+    // Radii as multiples of the turbine circle. Measured by pixel analysis of the
+    // original ActSwirl2 chart (9E, 0 MW, 160 deg), where the circle is R = 179.5 px.
+    private const float CanRingRadius = 1.475f;    // can bubble centres
+    private const float CanBubbleRadius = 0.163f;
+    private const float TcSpokeInner = 0.66f;      // spokes leave a wide clear hub
+    private const float TcSpokeOuter = 1.44f;      // and reach almost to the cans
+    private const float TcLabelRadius = 1.71f;
+    private const float DrawnExtent = 1.95f;
 
     private double swirlAngle;
 
@@ -130,9 +138,8 @@ public class SwirlDrawable : IDrawable
     private static double CanAngle(int can) =>
         Mod(-(CanZeroOffset + (can - 1) * CanSpacing), 360.0);
 
-    /// <summary>Screen bearing of a 1-based thermocouple, rotated by the swirl angle.</summary>
-    private double TcAngle(int tc) =>
-        Mod(-(TcZeroOffset + (tc - 1) * TcSpacing) + swirlAngle, 360.0);
+    /// <summary>Screen bearing of a 1-based thermocouple, carried round by the swirl.</summary>
+    private double TcAngle(int tc) => Mod(swirlAngle - TcSpacing * tc, 360.0);
 
     public void Draw(ICanvas canvas, RectF dirtyRect)
     {
@@ -141,33 +148,66 @@ public class SwirlDrawable : IDrawable
 
         float centerX = dirtyRect.Center.X;
         float centerY = dirtyRect.Center.Y;
-        float radius = Math.Min(centerX, centerY) - 20;
+        float radius = (Math.Min(centerX, centerY) - 4) / DrawnExtent;
+        float font = Math.Max(9f, radius * 0.085f);
 
-        canvas.FillColor = Colors.Gray;
-        for (int can = 1; can <= CanCount; can++)
-        {
-            PointF p = Polar(centerX, centerY, radius * 0.8f, CanAngle(can));
-            canvas.DrawString($"C{can}", p.X - 10, p.Y - 10, 20, 20,
-                HorizontalAlignment.Center, VerticalAlignment.Center);
-        }
+        canvas.FontSize = font;
 
+        // Turbine circle.
+        canvas.FillColor = Colors.White;
+        canvas.FillCircle(centerX, centerY, radius);
+
+        // T/C spokes, drawn before the circle outline so the outline stays unbroken.
+        canvas.StrokeSize = 1;
+        canvas.StrokeColor = Colors.Red;
         for (int tc = 1; tc <= TcCount; tc++)
         {
             double bearing = TcAngle(tc);
-            PointF outer = Polar(centerX, centerY, radius, bearing);
-            PointF inner = Polar(centerX, centerY, radius * 0.5f, bearing);
-
-            canvas.StrokeColor = Colors.Black;
-            canvas.DrawLine(outer.X, outer.Y, inner.X, inner.Y);
-
-            canvas.FillColor = Colors.Red;
-            canvas.FillCircle(outer.X, outer.Y, 5);
-            canvas.DrawString($"{tc}", outer.X + 5, outer.Y + 5, 30, 20,
-                HorizontalAlignment.Left, VerticalAlignment.Top);
+            PointF a = Polar(centerX, centerY, radius * TcSpokeInner, bearing);
+            PointF b = Polar(centerX, centerY, radius * TcSpokeOuter, bearing);
+            canvas.DrawLine(a.X, a.Y, b.X, b.Y);
         }
 
+        canvas.StrokeSize = Math.Max(2f, radius * 0.022f);
         canvas.StrokeColor = Colors.Black;
         canvas.DrawCircle(centerX, centerY, radius);
+
+        // Cans: a stalk out from the circle to a numbered bubble.
+        float bubble = radius * CanBubbleRadius;
+        for (int can = 1; can <= CanCount; can++)
+        {
+            double bearing = CanAngle(can);
+            PointF root = Polar(centerX, centerY, radius, bearing);
+            PointF hub = Polar(centerX, centerY, radius * CanRingRadius, bearing);
+
+            canvas.StrokeSize = Math.Max(3f, radius * 0.040f);
+            canvas.StrokeColor = Colors.Black;
+            canvas.DrawLine(root.X, root.Y, hub.X, hub.Y);
+
+            canvas.FillColor = Colors.White;
+            canvas.FillCircle(hub.X, hub.Y, bubble);
+            canvas.StrokeSize = Math.Max(2f, radius * 0.021f);
+            canvas.DrawCircle(hub.X, hub.Y, bubble);
+
+            canvas.FontColor = Colors.Black;
+            DrawCentred(canvas, $"#{can}", hub, bubble * 2f);
+        }
+
+        // T/C numbers, outside the can ring.
+        canvas.FontColor = Colors.Red;
+        for (int tc = 1; tc <= TcCount; tc++)
+        {
+            PointF p = Polar(centerX, centerY, radius * TcLabelRadius, TcAngle(tc));
+            DrawCentred(canvas, $"<{tc}>", p, font * 3.4f);
+        }
+
+        DrawCentred(canvas, "MS9001E", new PointF(centerX, centerY), font * 7f);
+    }
+
+    private static void DrawCentred(ICanvas canvas, string text, PointF at, float box)
+    {
+        canvas.DrawString(text, at.X - box / 2f, at.Y - box / 2f, box, box,
+            HorizontalAlignment.Center, VerticalAlignment.Center);
     }
 
     private static PointF Polar(float cx, float cy, float r, double bearingDeg)
