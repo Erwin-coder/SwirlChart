@@ -57,14 +57,41 @@
                 VerticalOptions="Fill"
                 BackgroundColor="#000000" />
         </Frame>
-        <Button
-            Text="About"
-            FontSize="18"
-            BackgroundColor="#0078D4"
-            TextColor="White"
-            CornerRadius="10"
-            HorizontalOptions="End"
-            Padding="10,6"
-            Clicked="OnAboutClicked" />
+        <HorizontalStackLayout
+            Spacing="8"
+            HorizontalOptions="End">
+            <Button
+                Text="Info 1"
+                FontSize="16"
+                BackgroundColor="#0078D4"
+                TextColor="White"
+                CornerRadius="10"
+                Padding="10,6"
+                Clicked="OnInfo1Clicked" />
+            <Button
+                Text="Info 2"
+                FontSize="16"
+                BackgroundColor="#0078D4"
+                TextColor="White"
+                CornerRadius="10"
+                Padding="10,6"
+                Clicked="OnInfo2Clicked" />
+            <Button
+                Text="Chart"
+                FontSize="16"
+                BackgroundColor="#0078D4"
+                TextColor="White"
+                CornerRadius="10"
+                Padding="10,6"
+                Clicked="OnChartClicked" />
+            <Button
+                Text="About"
+                FontSize="16"
+                BackgroundColor="#0078D4"
+                TextColor="White"
+                CornerRadius="10"
+                Padding="10,6"
+                Clicked="OnAboutClicked" />
+        </HorizontalStackLayout>
     </VerticalStackLayout>
 </ContentPage>

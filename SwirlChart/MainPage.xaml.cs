@@ -24,6 +24,21 @@ public partial class MainPage : ContentPage
         await DisplayAlert("About", "Swirl Chart\nDeveloped With Love and Candy \nEngineer: Abbas :)", "OK");
     }
 
+    private async void OnInfo1Clicked(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new InfoPage(InfoContent.Info1Title, InfoContent.Info1));
+    }
+
+    private async void OnInfo2Clicked(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new InfoPage(InfoContent.Info2Title, InfoContent.Info2));
+    }
+
+    private async void OnChartClicked(object sender, EventArgs e)
+    {
+        await Navigation.PushAsync(new ChartPage());
+    }
+
     private void OnLoadSliderChanged(object sender, ValueChangedEventArgs e)
     {
         if (syncing)

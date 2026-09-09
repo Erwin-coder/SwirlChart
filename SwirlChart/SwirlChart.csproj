@@ -16,6 +16,56 @@
     <ApplicationManifest>Platforms\Windows\app.manifest</ApplicationManifest>
     <EnableMsixTooling>false</EnableMsixTooling>
   </PropertyGroup>
+  <!-- The Windows App SDK resolves the AppxPackage MSBuild tasks from
+       $(AppxMSBuildToolsPath), which under the .NET SDK points at a folder Microsoft
+       does not ship those tasks in - only Visual Studio has them. Without this, plain
+       `dotnet build` / `dotnet run` fails with MSB4062 on
+       Microsoft.Build.Packaging.Pri.Tasks.ExpandPriContent and only VS MSBuild works.
+       Locate the Visual Studio copy and point the SDK at it. -->
+  <ItemGroup Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'windows'">
+    <_AppxPriTaskDll Include="$(ProgramW6432)\Microsoft Visual Studio\*\*\MSBuild\Microsoft\VisualStudio\v*\AppxPackage\Microsoft.Build.Packaging.Pri.Tasks.dll" KeepDuplicates="false" />
+  </ItemGroup>
+  <PropertyGroup>
+    <_AppxPriTaskPath>@(_AppxPriTaskDll->'%(FullPath)')</_AppxPriTaskPath>
+    <_AppxPriTaskDir>@(_AppxPriTaskDll->'%(RootDir)%(Directory)')</_AppxPriTaskDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(_AppxPriTaskPath)' != ''">
+    <PriProjTaskAssembly>$(_AppxPriTaskPath)</PriProjTaskAssembly>
+    <AppxMSBuildToolsPath>$(_AppxPriTaskDir)</AppxMSBuildToolsPath>
+  </PropertyGroup>
+  <!-- Release Android: arm64 only, fully AOT compiled, no debug information, and
+       trimmed hard. Verified on device after each of these was turned on. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+    <!-- Real devices are arm64. The default also builds x86_64 for emulators, which
+         cost ~14 MB of APK for nothing. Add android-x64 back for an emulator build. -->
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+
+    <!-- Full AOT of every method, then drop the IL that is no longer needed. -->
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <AndroidStripILAfterAOT>true</AndroidStripILAfterAOT>
+
+    <!-- No debug information of any kind in the package. -->
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <AndroidIncludeDebugSymbols>false</AndroidIncludeDebugSymbols>
+
+    <!-- Trim everything the app does not actually call. -->
+    <PublishTrimmed>true</PublishTrimmed>
+    <TrimMode>full</TrimMode>
+
+    <!-- Framework features this app never uses. InvariantGlobalization drops the ICU
+         data set; every format string here already uses InvariantCulture. -->
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <EventSourceSupport>false</EventSourceSupport>
+    <MetadataUpdaterSupport>false</MetadataUpdaterSupport>
+    <NullabilityInfoContextSupport>false</NullabilityInfoContextSupport>
+    <HttpActivityPropagationSupport>false</HttpActivityPropagationSupport>
+    <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
+    <XmlResolverIsNetworkingEnabledByDefault>false</XmlResolverIsNetworkingEnabledByDefault>
+  </PropertyGroup>
   <PropertyGroup>
     <LangVersion>
     </LangVersion>
@@ -32,7 +82,12 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
+  <!-- App icon: a red 3-blade swirl on a white turbine disc, on the app's own header
+       blue. ForegroundFile is the adaptive-icon layer used on Android (Color fills the
+       background layer behind it); appicon.svg alone is used where there is no adaptive
+       layer (Windows tile, etc). No MauiIcon item existed before this - the app had no
+       custom icon at all. -->
   <ItemGroup>
-    <PackageReference Include="SkiaSharp.Views.Maui.Controls" Version="3.119.0" />
+    <MauiIcon Include="Resources\AppIconppicon.svg" ForegroundFile="Resources\AppIconppiconfg.svg" Color="#0078D4" />
   </ItemGroup>
 </Project>
