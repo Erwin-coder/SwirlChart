@@ -82,10 +82,19 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
-  <!-- App icon: the original ActSwirl2.exe icon, extracted from its Win32 resources
-       (32x32, the only size it shipped). Color fills the padding Resizetizer adds
-       around it and the Android adaptive-icon background layer. No MauiIcon item
-       existed before this - the app had no custom icon at all. -->
+  <!-- App icon: the original ActSwirl2.exe icon, extracted from its Win32 resources.
+       It only ever shipped at 32x32, flat (no alpha channel) on a plain #C0C0C0
+       "silver" field - the classic Win16/32 icon background of that era - with real
+       art touching several edges of the canvas. Verified with GDI's own ExtractIconEx,
+       not just a raw resource dump, so the flat gray is confirmed to be the icon's
+       actual appearance, not an extraction artifact. For use as a modern (Android
+       adaptive / other) icon: chroma-keyed that exact gray to transparent, cropped to
+       content, scaled 4x with nearest-neighbour (keeps the original pixel art crisp
+       instead of blurring it), and centred with margin on a 320x320 canvas so nothing
+       is clipped by an adaptive-icon mask. Not a redraw - every non-background pixel
+       is untouched from the original resource. Color fills that margin and the
+       Android adaptive-icon background layer. No MauiIcon item existed before this -
+       the app had no custom icon at all. -->
   <ItemGroup>
     <MauiIcon Include="Resources\AppIcon\appicon.png" Color="#0078D4" />
   </ItemGroup>
