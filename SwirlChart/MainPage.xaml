@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ContentPage
+    xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+    
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    x:Class="SwirlChart.MainPage"
+    BackgroundColor="#f4f6f9"
+    Title="Swirl Chart">
+    <VerticalStackLayout
+        Padding="20"
+        Spacing="20">
+        <Label
+            Text="Load (MW)"
+            FontSize="20"
+            TextColor="#333333"
+            HorizontalOptions="Center" />
+        <Frame
+            Padding="5"
+            CornerRadius="8"
+            BorderColor="#CCCCCC"
+            BackgroundColor="White"
+            HasShadow="False">
+            <Entry
+                x:Name="LoadEntry"
+                Placeholder="Enter Load in MW"
+                Keyboard="Numeric"
+                FontSize="18"
+                TextColor="#333333"
+                BackgroundColor="Transparent"
+                TextChanged="OnLoadEntryTextChanged" />
+        </Frame>
+        <Slider
+            x:Name="LoadSlider"
+            Minimum="0"
+            Maximum="120"
+            ValueChanged="OnLoadSliderChanged"
+            HeightRequest="40"
+            ThumbColor="#0078D4"
+            MinimumTrackColor="#0078D4"
+            MaximumTrackColor="#CCCCCC" />
+        <Label
+            x:Name="ResultLabel"
+            FontSize="16"
+            TextColor="#0063B1"
+            HorizontalOptions="Center"
+            VerticalOptions="Center" />
+        <Frame
+            Padding="5"
+            CornerRadius="8"
+            BorderColor="#CCCCCC"
+            BackgroundColor="White"
+            HasShadow="False">
+            <GraphicsView
+                x:Name="SwirlGraphics"
+                HeightRequest="400"
+                HorizontalOptions="Fill"
+                VerticalOptions="Fill"
+                BackgroundColor="#000000" />
+        </Frame>
+        <Button
+            Text="About"
+            FontSize="18"
+            BackgroundColor="#0078D4"
+            TextColor="White"
+            CornerRadius="10"
+            HorizontalOptions="End"
+            Padding="10,6"
+            Clicked="OnAboutClicked" />
+    </VerticalStackLayout>
+</ContentPage>
