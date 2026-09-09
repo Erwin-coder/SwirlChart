@@ -82,12 +82,11 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
   </PropertyGroup>
-  <!-- App icon: a red 3-blade swirl on a white turbine disc, on the app's own header
-       blue. ForegroundFile is the adaptive-icon layer used on Android (Color fills the
-       background layer behind it); appicon.svg alone is used where there is no adaptive
-       layer (Windows tile, etc). No MauiIcon item existed before this - the app had no
-       custom icon at all. -->
+  <!-- App icon: the original ActSwirl2.exe icon, extracted from its Win32 resources
+       (32x32, the only size it shipped). Color fills the padding Resizetizer adds
+       around it and the Android adaptive-icon background layer. No MauiIcon item
+       existed before this - the app had no custom icon at all. -->
   <ItemGroup>
-    <MauiIcon Include="Resources\AppIconppicon.svg" ForegroundFile="Resources\AppIconppiconfg.svg" Color="#0078D4" />
+    <MauiIcon Include="Resources\AppIcon\appicon.png" Color="#0078D4" />
   </ItemGroup>
 </Project>
